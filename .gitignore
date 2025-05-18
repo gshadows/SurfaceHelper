@@ -1,0 +1,10 @@
+build
+obj
+
+# Other
+*.bak
+*.orig
+*.log
+*.~*
+~$*
+.~lock.*
