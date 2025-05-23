@@ -227,6 +227,8 @@ namespace Observatory.SurfaceHelper {
                 Timeout = 0, //settings.OverlayIsSticky ? 0 : -1,
                 Sender = AboutInfo.ShortName,
                 Guid = notificationGuid,
+                XPos = 0f,
+                YPos = 50f,
             };
             if (isFirstTime) {
                 Core.SendNotification(currentNotificationArgs);
