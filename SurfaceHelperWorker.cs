@@ -289,14 +289,14 @@ namespace Observatory.SurfaceHelper {
 
         private void NotifyDistanceLimits(double distance) {
             if (distance >= settings.ShipDistance2) {
-                if (shipDistanceRangeNow != 2) {
+                if (shipDistanceRangeNow < 2) {
                     shipDistanceRangeNow = 2;
                     showShipTooFarNotification(true);
                 }
                 return;
             }
             if (distance >= settings.ShipDistance1) {
-                if (shipDistanceRangeNow != 1) {
+                if (shipDistanceRangeNow < 1) {
                     shipDistanceRangeNow = 1;
                     showShipTooFarNotification(false);
                 }
