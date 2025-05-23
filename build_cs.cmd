@@ -6,7 +6,7 @@ set PluginName=SurfaceHelper
 
 call :BUILD x64 Debug
 rem call :BUILD x86 Debug
-rem call :BUILD x64 Release
+call :BUILD x64 Release
 rem call :BUILD x86 Release
 
 goto :EOF
