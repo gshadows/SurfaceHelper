@@ -18,6 +18,7 @@ namespace Observatory.SurfaceHelper {
 
         private NotificationArgs currentNotificationArgs = null;
         private (double lat, double lon) shipLocation = INVALID_LOCATION;
+        private (double lat, double lon) cockpitLocation = INVALID_LOCATION;
         private double currentBodyRadius = 0;
         private bool tracking = false;
         private int shipDistanceRangeNow = 0; // 0 - near, 1,2 - outside ranges.
@@ -90,18 +91,24 @@ namespace Observatory.SurfaceHelper {
         /**
           EVENT:       Ship landed.
           ASSUMPTIONS: Player could be inside or outside the ship!
-          ACTION:      Save it's coordinates.
+          ACTION:      Save it's coordinates. But it is not exact unfortunately :(
         **/
         private void onTouchdown(Touchdown touchdown) {
             if (touchdown.OnStation || !touchdown.OnPlanet || touchdown.Taxi) {
                 MaybeCloseNotification();
                 return;
             }
-            //shipLocation = (touchdown.Latitude, touchdown.Longitude); -- wrong, this is Pilot's coords sitting in chair.
             Logger.AppendLog($"Touchdown: LAT {touchdown.Latitude}, LON {touchdown.Longitude}", settings.LogFile);
             if (!touchdown.PlayerControlled) {
+                // Ship was recalled and landed automatically. Player is OUTSIDE ship now.
+                // TODO: Check if this is ship center location or cockpit again.
                 shipLocation = (touchdown.Latitude, touchdown.Longitude);
+                cockpitLocation = INVALID_LOCATION; // Now assume it is real ship location.
                 startTracking();
+            } else {
+                // Ship landed with player INSIDE.
+                // Unfortuinately, this is player inside cockpit location, not ship center :(
+                cockpitLocation = (touchdown.Latitude, touchdown.Longitude);
             }
         }
 
@@ -114,6 +121,7 @@ namespace Observatory.SurfaceHelper {
             Logger.AppendLog("Liftoff", settings.LogFile);
             stopTracking();
             shipLocation = INVALID_LOCATION;
+            cockpitLocation = INVALID_LOCATION;
             statsSinceOnLand = 0;
             if (!liftoff.PlayerControlled) {
                 // Ship flew away without player T_T
@@ -196,12 +204,29 @@ namespace Observatory.SurfaceHelper {
             if (!tracking) return;
             if (shipLocation == INVALID_LOCATION) {
                 statsSinceOnLand++;
+                // Skip first 3 locations because it's wrong.
                 if (statsSinceOnLand > 3) {
-                    Logger.AppendLog($"SAVING SHIP COORD: LAT: {status.Latitude}, LON:{status.Longitude}, PR {status.PlanetRadius}", settings.LogFile);
-                    shipLocation = (status.Latitude, status.Longitude);
+                    guessShipLocationAtDisembark((status.Latitude, status.Longitude));
                 }
             }
             processNewLocation(status);
+        }
+        
+        
+        private void guessShipLocationAtDisembark((double lat, double lon) player) {
+            Logger.AppendLog($"Guessing ship location: Disembark at (LAT: {player.lat}, LON: {player.lon})", settings.LogFile);
+            if (shipLocation != INVALID_LOCATION) {
+                // We already know ship lication, for example from Touchdown without pilot.
+                Logger.AppendLog($"KEEP SHIP LOCATION: LAT: {shipLocation.lat}, LON:{shipLocation.lon}", settings.LogFile);
+                return;
+            }
+            if (cockpitLocation != INVALID_LOCATION) {
+                shipLocation = MathHelper.middlePoint(cockpitLocation, player, 0.0);
+                Logger.AppendLog($"SAVING SHIP WITH CORRECTION: LAT: {shipLocation.lat}, LON:{shipLocation.lon}", settings.LogFile);
+            } else {
+                Logger.AppendLog($"SAVING SHIP DIRECTLY", settings.LogFile);
+                shipLocation = player;
+            }
         }
 
 
@@ -311,20 +336,8 @@ namespace Observatory.SurfaceHelper {
             if (shipLocation == INVALID_LOCATION || status.PlanetRadius <= 0) {
                 return double.NaN;
             }
-            return CalculateGreatCircleDistance(shipLocation, (status.Latitude, status.Longitude), status.PlanetRadius);
+            return MathHelper.calculateGreatCircleDistance(shipLocation, (status.Latitude, status.Longitude), status.PlanetRadius);
         }
-
-        private static double CalculateGreatCircleDistance((double lat, double lon) location1, (double lat, double lon) location2, double radius) {
-            //Logger.AppendLog($"Calc dist: D.LAT {location2.lat - location1.lat}, D.LON {location2.lon - location1.lon}, RAD={radius}", settings.LogFile);
-
-            var latDeltaSin = Math.Sin(ToRadians(location1.lat - location2.lat) / 2);
-            var longDeltaSin = Math.Sin(ToRadians(location1.lon - location2.lon) / 2);
-            
-            var hSin = latDeltaSin * latDeltaSin + Math.Cos(ToRadians(location1.lat)) * Math.Cos(ToRadians(location1.lat)) * longDeltaSin * longDeltaSin;
-            return Math.Abs(2 * radius * Math.Asin(Math.Sqrt(hSin)));
-        }
-
-        private static double ToRadians(double degrees) => degrees * 0.0174533;
 
         private void MaybeCloseNotification() {
             if (currentNotificationArgs != null) {
