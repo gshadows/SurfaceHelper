@@ -221,7 +221,7 @@ namespace Observatory.SurfaceHelper {
                 return;
             }
             if (cockpitLocation != INVALID_LOCATION) {
-                shipLocation = MathHelper.middlePoint(cockpitLocation, player, 0.0);
+                shipLocation = MathHelper.middlePoint(cockpitLocation, player, settings.ShipCenterOffset);
                 Logger.AppendLog($"SAVING SHIP WITH CORRECTION: LAT: {shipLocation.lat}, LON:{shipLocation.lon}", settings.LogFile);
             } else {
                 Logger.AppendLog($"SAVING SHIP DIRECTLY", settings.LogFile);
@@ -351,6 +351,9 @@ namespace Observatory.SurfaceHelper {
             SurfaceHelperGrid uiObject = new();
             GridCollection.Add(uiObject);
             pluginUI = new PluginUI(GridCollection);
+            if (settings.LogFile == SurfaceHelperSettings.DEFAULT_LOG_NAME) {
+                settings.LogFile = observatoryCore.PluginStorageFolder + SurfaceHelperSettings.DEFAULT_LOG_NAME;
+            }
 
             Core = observatoryCore;
         }

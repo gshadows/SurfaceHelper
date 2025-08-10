@@ -5,14 +5,18 @@ namespace Observatory.SurfaceHelper
 {
     class SurfaceHelperSettings
     {
+        public static readonly string DEFAULT_LOG_NAME = "SurfaceHelper.log";
+        
         public static readonly SurfaceHelperSettings DEFAULT = new()
         {
             ShipDistance1 = 1750,
             ShipDistance2 = 1900,
+            ShipCenterOffset = 0.0,
             OverlayEnabled = true,
-            LogFile = "SurfaceHelper.log",//"D:\\PROJECTS\\ObservatoryCorePlugins\\SurfaceHelper\\SurfaceHelper.log",
+            LogFile = DEFAULT_LOG_NAME,
         };
 
+        [SettingNewGroup("Ship Distance")]
         [SettingDisplayName("Ship distance 1-st warning (0 - off)")]
         [SettingNumericBounds(0, 2000, 50)]
         public int ShipDistance1 { get; set; }
@@ -21,6 +25,12 @@ namespace Observatory.SurfaceHelper
         [SettingNumericBounds(0, 2000, 50)]
         public int ShipDistance2 { get; set; }
 
+        [SettingDisplayName("Ship center offset from midpoint (0 - center, -1 - cockpit, +1 - disembark point))")]
+        [SettingNumericBounds(-2, +2, 0.01, 2)]
+        public double ShipCenterOffset { get; set; }
+
+
+        [SettingNewGroup("Other Options")]
         [SettingDisplayName("Enable Ship Distance Overlay")]
         public bool OverlayEnabled { get; set; }
 
