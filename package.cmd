@@ -1,7 +1,7 @@
 ﻿@echo off
 
 set PluginName=SurfaceHelper
-set VERSION=0.0.1
+set VERSION=0.0.2
 
 set ZIPFILE=..\..\releases\%PluginName%.%VERSION%.eop
 

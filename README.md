@@ -4,7 +4,7 @@ This plugin is for "Elite Observatory Core" tool for "Elite Dangerous" game.
 ### Current features
 
 * Display current distance to the ship in floating notification.
-* Notify player when distance to ship exceeds specified range to prevent ship take off when 2km away.
+* Notify player when distance to ship exceeds specified range to prevent ship unexpected take off at 2km distance.
 * Notify when ship took off without player.
 
 ### Future plans
@@ -18,7 +18,7 @@ Original ["Botanist"](https://github.com/Xjph/ObservatoryCore/tree/master/Observ
 ## How To Install
 Download plugin and extract DLL into plugins folder of Observatory Core.
 
-Alternatively, start plugin in explorer so that Observatory install it by itself.
+Alternatively, double-click *.eop plugin file in explorer so that Observatory install it by itself.
 
 ## How To Use
 Disembark your ship or deploy SRV onto planet surface.
@@ -48,5 +48,5 @@ On the "Core" page of Observatory you can open plugin configuration to set custo
 *Prepare release*
 
 4. Ensure you have [7-Zip](https://www.7-zip.org/download.html) installed.
-5. Run "package.cmd. script.
+5. Run "package.cmd" script.
 6. Find "SurfaceHelper.(version).eop" plugin package inside "releases".

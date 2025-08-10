@@ -13,4 +13,5 @@ goto :EOF
 
 :BUILD
 dotnet build -a %1 -c %2 --nologo -o .\build\%1-%2\ -p:ObservatoryPath="%ObservatoryPath%" -p:PluginName=%PluginName%
+if ERRORLEVEL 1 exit
 exit /B
