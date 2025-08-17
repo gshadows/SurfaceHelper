@@ -154,7 +154,8 @@ namespace Observatory.SurfaceHelper {
             BodyInfo info;
             if (bodies.TryGetValue(bodyId, out info)) {
                 Logger.AppendLog($"Welcome: body {currentBodyId} ({currentBodyName}), {info.temp}°K / {info.gravity}G", settings.LogFile);
-                var gravityStr = (info.gravity >= settings.HighGravity) ? "High gravity! " : "Gravity: ";
+                double gravity = Math.Round(info.gravity / 9.81f, 1);
+                var gravityStr = (gravity >= settings.HighGravity) ? "High gravity! " : "Gravity: ";
                 var tempStr = (info.temp >= settings.HighTemperature) ? "Hight temperature! " : "Temperature: ";
                 double temp;
                 switch (settings.TemperatureScale) {
@@ -169,9 +170,8 @@ namespace Observatory.SurfaceHelper {
                     case 2: degStr = $"degrees Fahrenheit"; break;
                 }
                 int roundedTemp = (int)(Math.Round(temp / 25)) * 25;
-                double gravity = Math.Round(info.gravity / 9.81f, 1);
                 Logger.AppendLog($"Welcome: #{currentBodyId} ({currentBodyName}), {roundedTemp} {degStr} / {gravity} G", settings.LogFile);
-                showPlanetWelcomeNotification($"{gravityStr}{gravity} G.\n{tempStr}{roundedTemp} {degStr}.");
+                showPlanetWelcomeNotification($"{gravityStr}{gravity} G. \n{tempStr}{roundedTemp} {degStr}.");
             } else {
                 Logger.AppendLog($"Welcome: unscanned body #{3} ({currentBodyName})", settings.LogFile);
             }
