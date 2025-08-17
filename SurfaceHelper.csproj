@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionNumber>0.0.2.0</VersionNumber>
+    <VersionNumber>0.0.3.0</VersionNumber>
 
     <!--AssemblyVersion Condition=" '$(VersionSuffix)' == '' ">0.0.2.0</AssemblyVersion-->
     <AssemblyVersion>$(VersionNumber)</AssemblyVersion>

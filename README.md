@@ -6,6 +6,7 @@ This plugin is for "Elite Observatory Core" tool for "Elite Dangerous" game.
 * Display current distance to the ship in floating notification.
 * Notify player when distance to ship exceeds specified range to prevent ship unexpected take off at 2km distance.
 * Notify when ship took off without player.
+* Notify about planet gravity and temprtature at any of four stages of landing: approach, exit SC, touchdown and disembark.
 
 ### Future plans
 
