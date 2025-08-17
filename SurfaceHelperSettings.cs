@@ -14,7 +14,15 @@ namespace Observatory.SurfaceHelper
             ShipCenterOffset = 0.0,
             OverlayEnabled = true,
             LogFile = DEFAULT_LOG_NAME,
+            ApproachWelcome = true,
+            SCExitWelcome = false,
+            TouchdownWelcome = false,
+            TemperatureScaleName = true,
+            TemperatureScale = 0,
+            HighGravity = 1.5f,
+            HighTemperature = 700,
         };
+
 
         [SettingNewGroup("Ship Distance")]
         [SettingDisplayName("Ship distance 1-st warning (0 - off)")]
@@ -28,6 +36,35 @@ namespace Observatory.SurfaceHelper
         [SettingDisplayName("Ship center offset from midpoint (0 - center, -1 - cockpit, +1 - disembark point))")]
         [SettingNumericBounds(-2, +2, 0.01, 2)]
         public double ShipCenterOffset { get; set; }
+
+
+        [SettingNewGroup("Planet Info")]
+        [SettingDisplayName("Welcome on approach")]
+        public bool ApproachWelcome { get; set; }
+
+        [SettingDisplayName("Welcome on SC exit")]
+        public bool SCExitWelcome { get; set; }
+
+        [SettingDisplayName("Welcome on touchdown")]
+        public bool TouchdownWelcome { get; set; }
+
+        [SettingDisplayName("Welcome on disembark")]
+        public bool DisembarkWelcome { get; set; }
+
+        [SettingDisplayName("Name temp. scale")]
+        public bool TemperatureScaleName { get; set; }
+
+        [SettingDisplayName("Temp. scale: 0-K,1-C,2-F")]
+        [SettingNumericBounds(0, 2, 1)]
+        public int TemperatureScale { get; set; }
+
+        [SettingDisplayName("High gravity")]
+        [SettingNumericBounds(0, 10, 0.25, 2)]
+        public double HighGravity { get; set; }
+
+        [SettingDisplayName("High temperature")]
+        [SettingNumericBounds(0, 1500, 50)]
+        public int HighTemperature { get; set; }
 
 
         [SettingNewGroup("Other Options")]

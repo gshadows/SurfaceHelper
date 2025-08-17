@@ -41,5 +41,9 @@ namespace Observatory.SurfaceHelper {
             double midLon = p1.lon + weight * (p2.lon - p1.lon);
             return (midLat, midLon);
         }
+
+        public static double kelvinToCelsius(double temp) => temp - 273.15f;
+
+        public static double kelvinToFarenheit(double temp) => (temp - 273.15f) * 9/5 + 32;
     }
 }

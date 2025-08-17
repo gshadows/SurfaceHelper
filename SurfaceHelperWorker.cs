@@ -12,6 +12,15 @@ namespace Observatory.SurfaceHelper {
     public class SurfaceHelperWorker : IObservatoryWorker {
         private static (double lat, double lon) INVALID_LOCATION = (200, 200);
 
+        private class BodyInfo {
+            public double gravity;
+            public double temp;
+            public BodyInfo(double grav, double temp) {
+                this.gravity = grav;
+                this.temp = temp;
+            }
+        }
+
 
         private IObservatoryCore Core;
         private bool OdysseyLoaded = false;
@@ -23,6 +32,12 @@ namespace Observatory.SurfaceHelper {
         private bool tracking = false;
         private int shipDistanceRangeNow = 0; // 0 - near, 1,2 - outside ranges.
         private int statsSinceOnLand = 0;
+
+        private string currentSystemName = "";
+        private ulong currentSystemId = 0;
+        private string currentBodyName = "";
+        private int currentBodyId = -1;
+        private Dictionary<int, BodyInfo> bodies = new Dictionary<int, BodyInfo>();
 
 
         private SurfaceHelperSettings settings = SurfaceHelperSettings.DEFAULT;
@@ -55,7 +70,9 @@ namespace Observatory.SurfaceHelper {
         {
             switch (journal) {
                 case LoadGame loadGame:
+                    Logger.AppendLog($"LoadGame: StartLanded {loadGame.StartLanded}", settings.LogFile);
                     OdysseyLoaded = loadGame.Odyssey;
+                    //onLoadGame(loadGame);
                     break;
                 case Liftoff liftoff:
                     onLiftoff(liftoff);
@@ -78,6 +95,15 @@ namespace Observatory.SurfaceHelper {
                 case DockSRV dockSrv:
                     onDockSRV(dockSrv);
                     break;
+                case ApproachBody approachBody:
+                    onApproachBody(approachBody);
+                    break;
+                case SupercruiseExit supercruiseExit:
+                    onSupercruiseExit(supercruiseExit);
+                    break;
+                case Scan scan:
+                    onScan(scan);
+                    break;
                 case LeaveBody:
                 case FSDJump:
                 case Shutdown:
@@ -88,27 +114,119 @@ namespace Observatory.SurfaceHelper {
             }
         }
 
+        private void onScan(Scan scan) {
+            //Logger.AppendLog($"Scan: Gravity {scan.SurfaceGravity}, Temp {scan.SurfaceTemperature}, Landable {scan.Landable}", settings.LogFile);
+            //Logger.AppendLog($"Scan: StarSys [{scan.StarSystem}], SysAddr {scan.SystemAddress}, BodyID {scan.BodyID}", settings.LogFile);
+            checkNewSystem(scan.SystemAddress, scan.StarSystem);
+            Logger.AppendLog($"Scan: body ID={scan.BodyID}, grav {scan.SurfaceGravity}, temp {scan.SurfaceTemperature}", settings.LogFile);
+            bodies[scan.BodyID] = new BodyInfo(scan.SurfaceGravity, scan.SurfaceTemperature);
+        }
+
+        private void onSupercruiseExit(SupercruiseExit supercruiseExit) {
+            //Logger.AppendLog($"SupercruiseExit: Body {supercruiseExit.Body}, BodyID {supercruiseExit.BodyID}, BodyType {supercruiseExit.BodyType}", settings.LogFile);
+            // There's no system info, obly body info.
+            if (settings.SCExitWelcome) {
+                planetWelcome(supercruiseExit.BodyID, supercruiseExit.Body);
+            }
+        }
+
+        private void onApproachBody(ApproachBody approachBody) {
+            //Logger.AppendLog($"ApproachBody: StarSys {approachBody.StarSystem}, SysAddr {approachBody.SystemAddress}, Body {approachBody.Body}, BodyID {approachBody.BodyID}", settings.LogFile);
+            checkNewSystem(approachBody.SystemAddress, approachBody.StarSystem);
+            if (settings.ApproachWelcome) {
+                planetWelcome(approachBody.BodyID, approachBody.Body);
+            }
+        }
+
+        private void checkNewSystem(ulong systemId, string systemName) {
+            if (currentSystemId != systemId) {
+                Logger.AppendLog($"New system: [{systemName}] ID={systemId}", settings.LogFile);
+                currentSystemName = systemName;
+                currentSystemId = systemId;
+                bodies.Clear();
+            }
+        }
+
+        private void planetWelcome(int bodyId, string fullBodyName) {
+            Logger.AppendLog($"Welcome: body #{currentBodyId} ({currentBodyName})", settings.LogFile);
+            currentBodyId = bodyId;
+            currentBodyName = extractBodyName(currentSystemName, fullBodyName);
+            BodyInfo info;
+            if (bodies.TryGetValue(bodyId, out info)) {
+                Logger.AppendLog($"Welcome: body {currentBodyId} ({currentBodyName}), {info.temp}°K / {info.gravity}G", settings.LogFile);
+                var gravityStr = (info.gravity >= settings.HighGravity) ? "High gravity! " : "Gravity: ";
+                var tempStr = (info.temp >= settings.HighTemperature) ? "Hight temperature! " : "Temperature: ";
+                double temp;
+                switch (settings.TemperatureScale) {
+                    default: temp = info.temp; break;
+                    case 1: temp = MathHelper.kelvinToCelsius(info.temp); break;
+                    case 2: temp = MathHelper.kelvinToFarenheit(info.temp); break;
+                };
+                string degStr = "degrees";
+                if (settings.TemperatureScaleName) switch (settings.TemperatureScale) {
+                    case 0: degStr = $"degrees Kelvin"; break;
+                    case 1: degStr = $"degrees Celsius"; break;
+                    case 2: degStr = $"degrees Fahrenheit"; break;
+                }
+                int roundedTemp = (int)(Math.Round(temp / 25)) * 25;
+                double gravity = Math.Round(info.gravity / 9.81f, 1);
+                Logger.AppendLog($"Welcome: #{currentBodyId} ({currentBodyName}), {roundedTemp} {degStr} / {gravity} G", settings.LogFile);
+                showPlanetWelcomeNotification($"{gravityStr}{gravity} G.\n{tempStr}{roundedTemp} {degStr}.");
+            } else {
+                Logger.AppendLog($"Welcome: unscanned body #{3} ({currentBodyName})", settings.LogFile);
+            }
+        }
+
+        private string extractBodyName(string starSystem, string fullBodyName)
+            => fullBodyName.Replace(starSystem, "").Trim();
+
+        private void showPlanetWelcomeNotification(string text) {
+            NotificationArgs args = new() {
+                Title = $"Welcome to body {currentBodyName}!",
+                TitleSsml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en-US\"><voice name=\"\"></voice></speak>",
+                Detail = text,
+                DetailSsml = $"<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en-US\"><voice name=\"\">Welcome to body {currentBodyName}!\n{text}</voice></speak>",
+                Rendering = NotificationRendering.All,
+                Timeout = -1, //settings.OverlayIsSticky ? 0 : -1,
+                Sender = AboutInfo.ShortName,
+                Guid = Guid.NewGuid(),
+            };
+            Core.SendNotification(args);
+        }
+
         /**
           EVENT:       Ship landed.
           ASSUMPTIONS: Player could be inside or outside the ship!
           ACTION:      Save it's coordinates. But it is not exact unfortunately :(
         **/
-        private void onTouchdown(Touchdown touchdown) {
-            if (touchdown.OnStation || !touchdown.OnPlanet || touchdown.Taxi) {
+        private void onTouchdown(Touchdown touchdown)
+        {
+            //Logger.AppendLog($"Touchdown: NearDest {touchdown.NearestDestination}, StarSys {touchdown.StarSystem}, SysAddr {touchdown.SystemAddress}, Body {touchdown.Body}, BodyID {touchdown.BodyID}", settings.LogFile);
+
+            if (touchdown.OnStation || !touchdown.OnPlanet || touchdown.Taxi)
+            {
                 MaybeCloseNotification();
                 return;
             }
             Logger.AppendLog($"Touchdown: LAT {touchdown.Latitude}, LON {touchdown.Longitude}", settings.LogFile);
-            if (!touchdown.PlayerControlled) {
+            if (!touchdown.PlayerControlled)
+            {
                 // Ship was recalled and landed automatically. Player is OUTSIDE ship now.
                 // TODO: Check if this is ship center location or cockpit again.
                 shipLocation = (touchdown.Latitude, touchdown.Longitude);
                 cockpitLocation = INVALID_LOCATION; // Now assume it is real ship location.
                 startTracking();
-            } else {
+            }
+            else
+            {
                 // Ship landed with player INSIDE.
                 // Unfortuinately, this is player inside cockpit location, not ship center :(
                 cockpitLocation = (touchdown.Latitude, touchdown.Longitude);
+            }
+
+            checkNewSystem(touchdown.SystemAddress, touchdown.StarSystem);
+            if (settings.TouchdownWelcome) {
+                planetWelcome(touchdown.BodyID, touchdown.Body);
             }
         }
 
@@ -150,6 +268,11 @@ namespace Observatory.SurfaceHelper {
             }
             Logger.AppendLog("Disembark", settings.LogFile);
             startTracking();
+
+            checkNewSystem(disembark.SystemAddress, disembark.StarSystem);
+            if (settings.TouchdownWelcome) {
+                planetWelcome(disembark.BodyID, disembark.Body);
+            }
         }
 
         /**
@@ -200,7 +323,6 @@ namespace Observatory.SurfaceHelper {
 
 
         public void StatusChange(Status status) {
-            Logger.AppendLog("StatusChange", settings.LogFile);
             if (!tracking) return;
             if (shipLocation == INVALID_LOCATION) {
                 statsSinceOnLand++;
