@@ -23,7 +23,8 @@ namespace Observatory.SurfaceHelper {
 
 
         private IObservatoryCore Core;
-        private bool OdysseyLoaded = false;
+        private bool odysseyLoaded = false;
+        private string currentShip = "";
 
         private NotificationArgs currentNotificationArgs = null;
         private (double lat, double lon) shipLocation = INVALID_LOCATION;
@@ -38,6 +39,18 @@ namespace Observatory.SurfaceHelper {
         private string currentBodyName = "";
         private int currentBodyId = -1;
         private Dictionary<int, BodyInfo> bodies = new Dictionary<int, BodyInfo>();
+
+        private class KnownShip {
+            public double centerOffset;
+            public KnownShip(double centerOffset) {
+                this.centerOffset = centerOffset;
+            }
+        }
+        private readonly Dictionary<string, KnownShip> knownShips = new Dictionary<string, KnownShip> {
+            //{"Asp",           new KnownShip(     0f) },
+            {"Type9",           new KnownShip( -0.06f) },
+            {"DiamondBackXL",   new KnownShip( -0.40f) },
+        };
 
 
         private SurfaceHelperSettings settings = SurfaceHelperSettings.DEFAULT;
@@ -70,9 +83,10 @@ namespace Observatory.SurfaceHelper {
         {
             switch (journal) {
                 case LoadGame loadGame:
-                    Logger.AppendLog($"LoadGame: StartLanded {loadGame.StartLanded}", settings.LogFile);
-                    OdysseyLoaded = loadGame.Odyssey;
-                    //onLoadGame(loadGame);
+                    onLoadGame(loadGame);
+                    break;
+                case ShipyardSwap shipyardSwap:
+                    onShipyardSwap(shipyardSwap);
                     break;
                 case Liftoff liftoff:
                     onLiftoff(liftoff);
@@ -112,6 +126,17 @@ namespace Observatory.SurfaceHelper {
                     tracking = false;
                     break;
             }
+        }
+
+        private void onLoadGame(LoadGame loadGame) {
+            Logger.AppendLog($"LoadGame: landed {loadGame.StartLanded}, ship [{loadGame.Ship}]", settings.LogFile);
+            odysseyLoaded = loadGame.Odyssey;
+            currentShip = loadGame.Ship;
+        }
+
+        private void onShipyardSwap(ShipyardSwap shipyardSwap) {
+            Logger.AppendLog($"ShipyardSwap: ship [{shipyardSwap.ShipType}]", settings.LogFile);
+            currentShip = shipyardSwap.ShipType;
         }
 
         private void onScan(Scan scan) {
@@ -343,7 +368,13 @@ namespace Observatory.SurfaceHelper {
                 return;
             }
             if (cockpitLocation != INVALID_LOCATION) {
-                shipLocation = MathHelper.middlePoint(cockpitLocation, player, settings.ShipCenterOffset);
+                double centerOffset = settings.ShipCenterOffset;
+                KnownShip knownShip = null;
+                if (knownShips.TryGetValue(currentShip, out knownShip)) {
+                    centerOffset += knownShip.centerOffset;
+                    Logger.AppendLog($"Applied known ship center offset: {knownShip.centerOffset}", settings.LogFile);
+                }
+                shipLocation = MathHelper.middlePoint(cockpitLocation, player, centerOffset);
                 Logger.AppendLog($"SAVING SHIP WITH CORRECTION: LAT: {shipLocation.lat}, LON:{shipLocation.lon}", settings.LogFile);
             } else {
                 Logger.AppendLog($"SAVING SHIP DIRECTLY", settings.LogFile);
