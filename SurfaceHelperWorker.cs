@@ -46,7 +46,7 @@ namespace Observatory.SurfaceHelper {
                 this.centerOffset = centerOffset;
             }
         }
-        private readonly Dictionary<string, KnownShip> knownShips = new Dictionary<string, KnownShip> {
+        private readonly Dictionary<string, KnownShip> knownShips = new Dictionary<string, KnownShip>(StringComparer.OrdinalIgnoreCase) {
             //{"Asp",           new KnownShip(     0f) },
             {"Type9",           new KnownShip( -0.06f) },
             {"DiamondBackXL",   new KnownShip( -0.40f) },
@@ -54,8 +54,10 @@ namespace Observatory.SurfaceHelper {
 
 
         private SurfaceHelperSettings settings = SurfaceHelperSettings.DEFAULT;
+
         ObservableCollection<object> GridCollection;
         private PluginUI pluginUI;
+
 
         private AboutInfo _aboutInfo = new()
         {
@@ -76,7 +78,14 @@ namespace Observatory.SurfaceHelper {
 
         public PluginUI PluginUI => pluginUI;
 
-        public object Settings { get => settings; set { settings = (SurfaceHelperSettings)value;  } }
+        public object Settings {
+            get => settings;
+            set {
+                Logger.AppendLog($"OLD SETTINGS: {settings}", settings.LogFile);
+                settings = (SurfaceHelperSettings)value;
+                Logger.AppendLog($"NEW SETTINGS: {settings}", settings.LogFile);
+            }
+        }
 
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase
@@ -143,7 +152,7 @@ namespace Observatory.SurfaceHelper {
             //Logger.AppendLog($"Scan: Gravity {scan.SurfaceGravity}, Temp {scan.SurfaceTemperature}, Landable {scan.Landable}", settings.LogFile);
             //Logger.AppendLog($"Scan: StarSys [{scan.StarSystem}], SysAddr {scan.SystemAddress}, BodyID {scan.BodyID}", settings.LogFile);
             checkNewSystem(scan.SystemAddress, scan.StarSystem);
-            Logger.AppendLog($"Scan: body ID={scan.BodyID}, grav {scan.SurfaceGravity}, temp {scan.SurfaceTemperature}", settings.LogFile);
+            Logger.AppendLog($"Scan: body ID={scan.BodyID}, grav {scan.SurfaceGravity:0.00}, temp {scan.SurfaceTemperature:0.00}", settings.LogFile);
             bodies[scan.BodyID] = new BodyInfo(scan.SurfaceGravity, scan.SurfaceTemperature);
         }
 
@@ -178,7 +187,7 @@ namespace Observatory.SurfaceHelper {
             currentBodyName = extractBodyName(currentSystemName, fullBodyName);
             BodyInfo info;
             if (bodies.TryGetValue(bodyId, out info)) {
-                Logger.AppendLog($"Welcome: body {currentBodyId} ({currentBodyName}), {info.temp}°K / {info.gravity}G", settings.LogFile);
+                Logger.AppendLog($"Welcome: body {currentBodyId} ({currentBodyName}), {info.temp:0.00}°K / {info.gravity:0.00}G", settings.LogFile);
                 double gravity = Math.Round(info.gravity / 9.81f, 1);
                 var gravityStr = (gravity >= settings.HighGravity) ? "High gravity! " : "Gravity: ";
                 var tempStr = (info.temp >= settings.HighTemperature) ? "Hight temperature! " : "Temperature: ";
@@ -375,7 +384,7 @@ namespace Observatory.SurfaceHelper {
                     Logger.AppendLog($"Applied known ship center offset: {knownShip.centerOffset}", settings.LogFile);
                 }
                 shipLocation = MathHelper.middlePoint(cockpitLocation, player, centerOffset);
-                Logger.AppendLog($"SAVING SHIP WITH CORRECTION: LAT: {shipLocation.lat}, LON:{shipLocation.lon}", settings.LogFile);
+                Logger.AppendLog($"SAVING SHIP WITH CORRECTION: LAT: {shipLocation.lat:0.00000}, LON:{shipLocation.lon:0.00000}", settings.LogFile);
             } else {
                 Logger.AppendLog($"SAVING SHIP DIRECTLY", settings.LogFile);
                 shipLocation = player;
@@ -387,7 +396,7 @@ namespace Observatory.SurfaceHelper {
             Logger.AppendLog($"LAT: {status.Latitude}, LON:{status.Longitude}, PR {status.PlanetRadius}", settings.LogFile);
 
             var distance = GetDistance(status);
-            Logger.AppendLog($"  distance = {distance}", settings.LogFile);
+            Logger.AppendLog($"  distance = {distance:0.00}", settings.LogFile);
             if (double.IsNaN(distance)) {
                 MaybeCloseNotification();
                 return;
@@ -507,9 +516,15 @@ namespace Observatory.SurfaceHelper {
             if (settings.LogFile == SurfaceHelperSettings.DEFAULT_LOG_NAME) {
                 settings.LogFile = observatoryCore.PluginStorageFolder + SurfaceHelperSettings.DEFAULT_LOG_NAME;
             }
+            //settings.ApplySettings = ApplySettings;
 
             Core = observatoryCore;
         }
+        
+        //private void ApplySettings() {
+        //    Logger.AppendLog($"APPLY SETTINGS", settings.LogFile);
+        //    Core.OpenSettings(this);
+        //}
 
         public void LogMonitorStateChanged(LogMonitorStateChangedEventArgs args) {
         }

@@ -1,4 +1,6 @@
 ﻿using Observatory.Framework;
+using System.Text.Json.Serialization;
+using System;
 using System.IO;
 
 namespace Observatory.SurfaceHelper
@@ -78,5 +80,10 @@ namespace Observatory.SurfaceHelper
 
         [SettingIgnore]
         public string LogFile { get; set; }
+
+
+        //[SettingDisplayName("Apply")]
+        //[JsonIgnore]
+        //public Action ApplySettings { get; internal set; }
     }
 }
