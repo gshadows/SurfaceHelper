@@ -78,14 +78,7 @@ namespace Observatory.SurfaceHelper {
 
         public PluginUI PluginUI => pluginUI;
 
-        public object Settings {
-            get => settings;
-            set {
-                Logger.AppendLog($"OLD SETTINGS: {settings}", settings.LogFile);
-                settings = (SurfaceHelperSettings)value;
-                Logger.AppendLog($"NEW SETTINGS: {settings}", settings.LogFile);
-            }
-        }
+        public object Settings { get => settings; set { settings = (SurfaceHelperSettings)value; } }
 
 
         public void JournalEvent<TJournal>(TJournal journal) where TJournal : JournalBase

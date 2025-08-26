@@ -8,6 +8,18 @@ This plugin is for "Elite Observatory Core" tool for "Elite Dangerous" game.
 * Notify when ship took off without player.
 * Notify about planet gravity and temprtature at any of four stages of landing: approach, exit SC, touchdown and disembark.
 
+Ship center is not provided by ED, so it is determined as a middle point between cockpit seat and disembark points.
+Unfortunately, not all ships are same, so corrections needed. If for your ship distance displayed incorrectly, please:
+
+* Try to change middle point offsets in settings.
+* Report me, which offset works for your ship and the ship name, so that I could add it to a known ships list.
+
+Currently known ships list:
+
+* ASP Explorer
+* Type 9
+* Diamond Back Explorer
+
 ### Future plans
 
 - Allow adding markers on surface and show it in the plugin UI tab.
